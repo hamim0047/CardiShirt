@@ -1,0 +1,9 @@
+numpy==1.26.4
+torch
+pandas
+scikit-learn
+matplotlib
+wfdb
+jupyter
+fastapi
+uvicorn
