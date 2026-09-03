@@ -2,102 +2,490 @@ import os
 import numpy as np
 import wfdb
 
-from config import MITDB_DIR, WINDOW_SIZE, STRIDE
+from config import (
+    MITDB_DIR,
+    SVDB_DIR,
+    WINDOW_SIZE,
+)
 
 
-def load_record(record_name: str):
-    path = os.path.join(MITDB_DIR, record_name)
-    record = wfdb.rdrecord(path)
-    annotation = wfdb.rdann(path, "atr")
+# =========================================================
+# MIT-BIH Arrhythmia Records
+# =========================================================
+
+MITDB_RECORDS = [
+    "100", "101", "102", "103", "104",
+    "105", "106", "107", "108", "109",
+    "111", "112", "113", "114", "115",
+    "116", "117", "118", "119", "121",
+    "122", "123", "124",
+    "200", "201", "202", "203",
+    "205", "207", "208", "209",
+    "210", "212", "213", "214",
+    "215", "217", "219", "220",
+    "221", "222", "223",
+    "228", "230", "231",
+    "232", "233", "234"
+]
+
+
+# =========================================================
+# MIT-BIH Supraventricular Records
+# =========================================================
+
+SVDB_RECORDS = [
+    "800",
+    "801",
+    "802",
+    "803",
+    "804",
+    "805",
+    "806",
+    "807",
+    "808",
+    "809",
+    "811",
+    "820",
+    "821",
+    "822",
+    "828",
+]
+
+
+# =========================================================
+# Beat Labels
+# =========================================================
+
+NORMAL_SYMBOLS = {
+    "N",
+    "L",
+    "R",
+    "e",
+    "j",
+}
+
+
+ABNORMAL_SYMBOLS = {
+
+    # ventricular
+    "V",
+    "E",
+    "F",
+
+    # atrial
+    "A",
+    "a",
+    "J",
+    "S",
+
+    # other
+    "Q",
+    "+",
+    "~",
+    "!",
+    '"',
+    "|",
+    "x",
+    "[",
+    "]",
+}
+
+
+VALID_SYMBOLS = (
+    NORMAL_SYMBOLS
+    |
+    ABNORMAL_SYMBOLS
+)
+
+
+
+# =========================================================
+# Load ECG record
+# =========================================================
+
+def load_record(
+    record_name,
+    database
+):
+
+    if database == "mitdb":
+
+        folder = MITDB_DIR
+
+    elif database == "svdb":
+
+        folder = SVDB_DIR
+
+    else:
+
+        raise ValueError(
+            "Unknown database"
+        )
+
+
+    path = os.path.join(
+        folder,
+        record_name
+    )
+
+
+    record = wfdb.rdrecord(
+        path
+    )
+
+
+    annotation = wfdb.rdann(
+        path,
+        "atr"
+    )
+
+
     return record, annotation
 
 
-def ensure_three_channels(signal: np.ndarray) -> np.ndarray:
-    # signal shape: (time, channels)
-    channels = signal.shape[1]
 
-    if channels >= 3:
-      return signal[:, :3]
+# =========================================================
+# Convert to AD8232 single lead
+# =========================================================
 
-    if channels == 2:
-        third = signal[:, 1:2]
-        return np.concatenate([signal, third], axis=1)
+def get_single_channel(signal):
 
-    if channels == 1:
-        return np.repeat(signal, 3, axis=1)
+    """
+    AD8232 gives one ECG channel.
 
-    raise ValueError("Signal has no channels")
+    Use first channel:
+    MIT-BIH MLII
+    """
 
+    if signal.ndim == 2:
 
-def label_window(symbols):
-    normal_symbols = {"N", "L", "R", "e", "j"}
-    ventricular_symbols = {"V", "E"}
-    atrial_symbols = {"A", "a", "J", "S"}
-
-    if all(sym in normal_symbols for sym in symbols):
-        return 0  # normal
-    elif any(sym in ventricular_symbols for sym in symbols):
-        return 1  # ventricular
-    elif any(sym in atrial_symbols for sym in symbols):
-        return 2  # atrial
-    else:
-        return 3  # other abnormal
+        signal = signal[:,0]
 
 
-def build_windows(record_name: str):
-    record, ann = load_record(record_name)
+    return signal
 
-    signal = record.p_signal
-    signal = ensure_three_channels(signal)
 
-    # normalize per channel
-    signal = (signal - signal.mean(axis=0)) / (signal.std(axis=0) + 1e-8)
 
-    windows = []
-    labels = []
+# =========================================================
+# Binary labeling
+# =========================================================
 
-    for start in range(0, len(signal) - WINDOW_SIZE, STRIDE):
-        end = start + WINDOW_SIZE
-        chunk = signal[start:end]  # (time, channels)
+def convert_label(symbol):
 
-        beat_idx = np.where((ann.sample >= start) & (ann.sample < end))[0]
-        if len(beat_idx) == 0:
+    if symbol in NORMAL_SYMBOLS:
+
+        return 0
+
+
+    elif symbol in ABNORMAL_SYMBOLS:
+
+        return 1
+
+
+    return None
+
+
+
+# =========================================================
+# Process one record
+# =========================================================
+
+def process_record(
+    record_name,
+    database
+):
+
+
+    record, annotation = load_record(
+        record_name,
+        database
+    )
+
+
+    signal = get_single_channel(
+        record.p_signal
+    )
+
+
+    # Normalize
+
+    signal = (
+        signal -
+        signal.mean()
+    ) / (
+        signal.std()
+        +
+        1e-8
+    )
+
+
+    X = []
+    y = []
+
+
+    half = WINDOW_SIZE // 2
+
+
+
+    for i, sample in enumerate(
+        annotation.sample
+    ):
+
+
+        symbol = annotation.symbol[i]
+
+
+        if symbol not in VALID_SYMBOLS:
+
             continue
 
-        symbols = [ann.symbol[i] for i in beat_idx]
-        label = label_window(symbols)
 
-        # transpose -> (channels, time)
-        chunk = chunk.T.astype(np.float32)
 
-        windows.append(chunk)
-        labels.append(label)
+        label = convert_label(
+            symbol
+        )
 
-    return windows, labels
+
+        if label is None:
+
+            continue
+
+
+
+        start = sample - half
+        end = sample + half
+
+
+
+        if start < 0:
+
+            continue
+
+
+        if end >= len(signal):
+
+            continue
+
+
+
+        beat = signal[
+            start:end
+        ]
+
+
+
+        if len(beat) != WINDOW_SIZE:
+
+            continue
+
+
+
+        # (720,)
+        # ->
+        # (1,720)
+
+        beat = np.expand_dims(
+            beat,
+            axis=0
+        )
+
+
+        X.append(
+            beat.astype(
+                np.float32
+            )
+        )
+
+
+        y.append(
+            label
+        )
+
+
+
+    return X, y
+
+
+
+# =========================================================
+# Build combined dataset
+# =========================================================
+
+def build_dataset():
+
+    X = []
+    y = []
+
+
+    print("="*60)
+    print("Processing MIT-BIH")
+    print("="*60)
+
+
+
+    for record in MITDB_RECORDS:
+
+
+        try:
+
+            x, labels = process_record(
+                record,
+                "mitdb"
+            )
+
+
+            X.extend(x)
+            y.extend(labels)
+
+
+            print(
+                record,
+                "samples:",
+                len(x)
+            )
+
+
+        except Exception as e:
+
+            print(
+                "Skipped",
+                record,
+                e
+            )
+
+
+
+    print()
+    print("="*60)
+    print("Processing SVDB")
+    print("="*60)
+
+
+
+    for record in SVDB_RECORDS:
+
+
+        try:
+
+            x, labels = process_record(
+                record,
+                "svdb"
+            )
+
+
+            X.extend(x)
+            y.extend(labels)
+
+
+            print(
+                record,
+                "samples:",
+                len(x)
+            )
+
+
+        except Exception as e:
+
+            print(
+                "Skipped",
+                record,
+                e
+            )
+
+
+
+    X = np.asarray(
+        X,
+        dtype=np.float32
+    )
+
+
+    y = np.asarray(
+        y,
+        dtype=np.int64
+    )
+
+
+    return X, y
+
+
+
+# =========================================================
+# Save
+# =========================================================
+
+def save_dataset(
+    X,
+    y
+):
+
+
+    os.makedirs(
+        "../data",
+        exist_ok=True
+    )
+
+
+    np.save(
+        "../data/signals_combined.npy",
+        X
+    )
+
+
+    np.save(
+        "../data/labels_combined.npy",
+        y
+    )
+
+
+    print()
+    print("="*60)
+    print("DATASET COMPLETE")
+    print("="*60)
+
+
+    print(
+        "Signals:",
+        X.shape
+    )
+
+
+    print(
+        "Labels:",
+        y.shape
+    )
+
+
+    print(
+        "Normal:",
+        np.sum(y==0)
+    )
+
+
+    print(
+        "Abnormal:",
+        np.sum(y==1)
+    )
+
+
+
+# =========================================================
+# Main
+# =========================================================
+
+def main():
+
+
+    X, y = build_dataset()
+
+
+    save_dataset(
+        X,
+        y
+    )
+
 
 
 if __name__ == "__main__":
-    records = [
-        "100", "101", "102", "103", "105", "106", "107", "108",
-        "109", "111", "112", "113", "114", "115", "116", "117",
-        "118", "119", "121", "122", "123", "124"
-    ]
 
-    all_x, all_y = [], []
-
-    for rec in records:
-        x, y = build_windows(rec)
-        all_x.extend(x)
-        all_y.extend(y)
-        print(f"{rec}: {len(x)} windows")
-
-    signals = np.array(all_x, dtype=np.float32)
-    labels = np.array(all_y, dtype=np.int64)
-
-    os.makedirs("../data", exist_ok=True)
-    np.save("../data/signals.npy", signals)
-    np.save("../data/labels.npy", labels)
-
-    print(f"Saved {len(signals)} windows.")
-    print(f"Signals shape: {signals.shape}")
-    print(f"Labels shape: {labels.shape}")
+    main()

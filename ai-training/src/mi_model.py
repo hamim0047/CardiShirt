@@ -2,10 +2,7 @@ import torch
 import torch.nn as nn
 
 
-
-class ECGCNNLSTM(
-    nn.Module
-):
+class MICNNLSTM(nn.Module):
 
     def __init__(
         self,
@@ -15,11 +12,6 @@ class ECGCNNLSTM(
 
         super().__init__()
 
-
-
-        # ==========================================
-        # CNN Feature Extractor
-        # ==========================================
 
         self.cnn = nn.Sequential(
 
@@ -31,11 +23,8 @@ class ECGCNNLSTM(
             ),
 
             nn.BatchNorm1d(32),
-
             nn.ReLU(),
-
             nn.MaxPool1d(2),
-
 
 
             nn.Conv1d(
@@ -46,11 +35,8 @@ class ECGCNNLSTM(
             ),
 
             nn.BatchNorm1d(64),
-
             nn.ReLU(),
-
             nn.MaxPool1d(2),
-
 
 
             nn.Conv1d(
@@ -61,16 +47,11 @@ class ECGCNNLSTM(
             ),
 
             nn.BatchNorm1d(128),
-
             nn.ReLU()
 
         )
 
 
-
-        # ==========================================
-        # LSTM Temporal Learning
-        # ==========================================
 
         self.lstm = nn.LSTM(
 
@@ -78,19 +59,15 @@ class ECGCNNLSTM(
 
             hidden_size=64,
 
-            num_layers=1,
-
             batch_first=True,
+
+            num_layers=1,
 
             bidirectional=False
 
         )
 
 
-
-        # ==========================================
-        # Classifier
-        # ==========================================
 
         self.fc = nn.Sequential(
 
@@ -113,21 +90,15 @@ class ECGCNNLSTM(
 
 
 
-    def forward(
-        self,
-        x
-    ):
+    def forward(self,x):
 
-
-        # x:
-        # (batch,1,720)
 
         x = self.cnn(x)
 
 
-        # CNN output:
-        # (batch,128,time)
-
+        # (batch, channel, time)
+        # ->
+        # (batch, time, channel)
 
         x = x.permute(
             0,
@@ -136,16 +107,12 @@ class ECGCNNLSTM(
         )
 
 
-        # LSTM expects:
-        # (batch,time,features)
-
-
-        output, _ = self.lstm(x)
+        x,_ = self.lstm(x)
 
 
         # last timestep
 
-        x = output[:, -1, :]
+        x = x[:,-1,:]
 
 
         return self.fc(x)
