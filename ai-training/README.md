@@ -1,18 +1,14 @@
 <div align="center">
 
-# 🫀 CardiShirt
+# 🧠 CardiShirt AI Training Pipeline
 
-### AI-Powered Wearable ECG Monitoring System
+### AI-Based ECG Risk Screening System
 
-*Continuous cardiac monitoring and early risk screening, powered by IoT and deep learning.*
+*A deep learning pipeline for wearable cardiac monitoring — from raw ECG signal to explainable risk report.*
 
-![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
-![ESP32](https://img.shields.io/badge/ESP32-E7352C?style=for-the-badge&logo=espressif&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
 ![Status](https://img.shields.io/badge/status-active%20development-yellow?style=for-the-badge)
 
 </div>
@@ -21,37 +17,44 @@
 
 ## Table of Contents
 
-- [Project Overview](#project-overview)
+- [Overview](#overview)
 - [System Architecture](#system-architecture)
-- [Main Components](#main-components)
-- [AI Architecture](#ai-architecture)
-- [AI Models](#ai-models)
+- [AI Pipeline Overview](#ai-pipeline-overview)
+- [Layer 1: ECG Signal Processing](#layer-1-ecg-signal-processing)
+- [Layer 2: AI Prediction Models](#layer-2-ai-prediction-models)
 - [Why CNN + LSTM?](#why-cnn--lstm)
-- [Wearable Hardware](#wearable-hardware)
-- [Complete Data Flow](#complete-data-flow)
-- [Features](#features)
-- [Repository Structure](#repository-structure)
+- [Arrhythmia Detection Model](#arrhythmia-detection-model)
+- [Myocardial Infarction Detection Model](#myocardial-infarction-detection-model)
+- [Why Different Datasets?](#why-different-datasets)
+- [Dataset Setup](#dataset-setup)
 - [Installation](#installation)
-- [Environment Variables](#environment-variables)
-- [Future Improvements](#future-improvements)
-- [Technologies Used](#technologies-used)
+- [Data Preparation](#data-preparation)
+- [Training Models](#training-models)
+- [Model Evaluation](#model-evaluation)
+- [AI Inference Pipeline](#ai-inference-pipeline)
+- [Layer 2: Decision Engine](#layer-2-decision-engine)
+- [Layer 3: Explanation System](#layer-3-explanation-system)
+- [Running the AI API](#running-the-ai-api)
+- [Project Structure](#project-structure)
+- [Summary](#summary)
 
 ---
 
-## Project Overview
+## Overview
 
-CardiShirt aims to provide an **affordable and intelligent cardiac monitoring solution** by continuously collecting ECG signals from a wearable device and analyzing them using AI.
+CardiShirt AI is a deep learning-based ECG analysis pipeline designed for wearable cardiac monitoring.
 
-The system can:
+The system receives ECG signals from a wearable device (ESP32 + ECG sensor), processes the ECG waveform, extracts physiological features, performs AI-based disease prediction, evaluates cardiac risk, and generates an understandable explanation.
 
-- 📡 Capture real-time ECG signals
-- ❤️ Monitor heart rate
-- 📊 Calculate HRV features
-- 🔍 Detect abnormal rhythms
-- 🚨 Detect possible myocardial infarction patterns
-- 🧮 Generate cardiac risk levels
-- 🤖 Provide AI-generated explanations
-- 📣 Notify users and emergency contacts
+**The AI system provides:**
+
+- 🔍 Arrhythmia detection
+- 🚨 Myocardial Infarction (MI) detection
+- 📶 ECG signal quality assessment
+- ❤️ Heart rate calculation
+- 📊 HRV analysis
+- 🧮 AI-based risk classification
+- 🤖 Explainable cardiac reports
 
 ---
 
@@ -59,240 +62,380 @@ The system can:
 
 ```mermaid
 flowchart TD
-    ESP32[CardiShirt Wearable — ESP32] --> Sensor[ECG Sensor Module]
-    Sensor --> Backend[Backend Server]
+    Device[Wearable ECG Device] --> ESP32
+    ESP32 --> Signal[ECG Signal]
+    Signal --> AI["CardiShirt AI"]
 
-    Backend --> DB[(Database)]
-    Backend --> AIS[AI Service]
-    Backend --> Notif[Notification]
+    AI --> L1["Layer 1<br/>ECG Signal Processing"]
+    L1 --> L2["Layer 2<br/>AI Models"]
 
-    AIS --> Models[CNN + LSTM Models]
-    Models --> Arr["Arrhythmia Model<br/>MIT-BIH + MIT-SVDB"]
-    Models --> MI["MI Model<br/>PTBDB"]
-
-    DB --> FE[Frontend Dashboard]
-
-    classDef hardware fill:#e7352c,stroke:#a6231a,color:#fff
-    classDef server fill:#339933,stroke:#1f6b1f,color:#fff
-    classDef ai fill:#ee4c2c,stroke:#a8331d,color:#fff
-    classDef data fill:#4169e1,stroke:#2a4aa8,color:#fff
-    classDef ui fill:#61dafb,stroke:#2596be,color:#000
-
-    class ESP32,Sensor hardware
-    class Backend,Notif server
-    class AIS,Models,Arr,MI ai
-    class DB data
-    class FE ui
-```
-
----
-
-## Main Components
-
-CardiShirt consists of three major parts:
-
-```
-CardiShirt
-│
-├── Frontend
-├── Backend
-└── AI Training Pipeline
-```
-
-### 1. Frontend
-
-| | |
-|---|---|
-| **Technology** | React.js + Vite |
-| **Location** | Repository root — see the [correction note](#repository-structure) below |
-
-The frontend provides the user interface for:
-
-- Dashboard monitoring
-- ECG visualization
-- Risk analysis
-- AI explanation
-- Health diary
-- Emergency contacts
-- User settings
-
-**Main features:**
-
-✅ Real-time health dashboard
-✅ ECG waveform visualization
-✅ AI prediction display
-✅ Alert management
-✅ Health history tracking
-
-### 2. Backend
-
-| | |
-|---|---|
-| **Technology** | Node.js, Express.js, Prisma ORM, PostgreSQL |
-| **Location** | `backend/` |
-
-The backend works as the communication bridge between:
-
-```mermaid
-flowchart LR
-    FE[Frontend] --> BE[Backend]
-    BE --> ESP[ESP32 Device]
-    BE --> AI[AI Service]
-```
-
-**Responsibilities:**
-
-- User authentication
-- Device management
-- ECG data receiving
-- Database storage
-- AI communication
-- Risk calculation
-- Emergency notification
-
-**Main technologies:**
-
-| Technology | Purpose |
-|---|---|
-| Express.js | REST API |
-| Prisma | Database ORM |
-| PostgreSQL | Data storage |
-| JWT | Authentication |
-
-### 3. AI Training Pipeline
-
-| | |
-|---|---|
-| **Technology** | Python, PyTorch, FastAPI |
-| **Location** | `ai-training/` |
-
-The AI pipeline performs:
-
-- ECG preprocessing
-- Feature extraction
-- Arrhythmia detection
-- MI detection
-- Risk evaluation
-- Explanation generation
-
----
-
-## AI Architecture
-
-```mermaid
-flowchart TD
-    Signal[ECG Signal] --> L1["Layer 1<br/>Signal Processing"]
-    L1 --> L2["Layer 2<br/>Deep Learning Models"]
-
-    L2 --> Arr["Arrhythmia Model<br/>CNN + LSTM<br/>MIT-BIH + MIT-SVDB"]
+    L2 --> Arr["Arrhythmia Model<br/>CNN + LSTM<br/>MIT-BIH + MIT-SV"]
     L2 --> MI["MI Model<br/>CNN + LSTM<br/>PTBDB"]
 
     Arr --> DE[Decision Engine]
     MI --> DE
 
-    DE --> L3["Layer 3<br/>Explainable AI"]
+    DE --> L3["Layer 3<br/>Explanation System"]
+    L3 --> Report[Final ECG Risk Report]
+
+    classDef hardware fill:#e7352c,stroke:#a6231a,color:#fff
+    classDef stage fill:#4169e1,stroke:#2a4aa8,color:#fff
+    classDef model fill:#ee4c2c,stroke:#a8331d,color:#fff
+    classDef decide fill:#f6b026,stroke:#a87218,color:#000
+    classDef out fill:#22c55e,stroke:#15803d,color:#fff
+
+    class Device,ESP32,Signal hardware
+    class AI,L1,L3 stage
+    class L2,Arr,MI model
+    class DE decide
+    class Report out
+```
+
+---
+
+## AI Pipeline Overview
+
+CardiShirt AI follows a three-layer architecture.
+
+```mermaid
+flowchart LR
+    L1["Layer 1<br/>ECG Signal Processing"] --> L2["Layer 2<br/>AI Disease Prediction"]
+    L2 --> L3["Layer 3<br/>Explainable AI"]
+
+    classDef stage fill:#4169e1,stroke:#2a4aa8,color:#fff
+    class L1,L2,L3 stage
+```
+
+| Layer | Name | Tasks |
+|---|---|---|
+| **1** | ECG Signal Processing | Filtering, noise removal, R peak detection, heart rate calculation, HRV calculation, signal quality checking |
+| **2** | AI Disease Prediction | Arrhythmia detection, MI detection, risk decision |
+| **3** | Explainable AI | Human-readable report, clinical recommendation |
+
+---
+
+## Layer 1: ECG Signal Processing
+
+**Location:** `src/layer1/`
+
+Layer 1 converts raw ECG samples into meaningful cardiac information.
+
+**Files:**
+
+```
+layer1/
+├── filtering.py
+├── peak_detection.py
+├── features.py
+├── morphology.py
+├── signal_quality.py
+└── pipeline.py
+```
+
+### ECG Filtering
+
+**File:** `filtering.py`
+
+**Purpose:** remove ECG noise —
+
+- Baseline drift
+- High frequency noise
+- Electrical interference
+
+```mermaid
+flowchart LR
+    Raw[Raw ECG] --> Filter[Filtering]
+    Filter --> Clean[Clean ECG Signal]
+```
+
+### R Peak Detection
+
+**File:** `peak_detection.py`
+
+R peaks are detected to calculate:
+
+- Heart rate
+- RR interval
+- HRV
+
+```
+      R          R          R
+      /\         /\         /\
+_____/  \_______/  \_______/  \____
+        RR1          RR2
+```
+
+### ECG Feature Extraction
+
+**File:** `features.py`
+
+| Feature | Description |
+|---|---|
+| **Heart Rate** | Beats per minute |
+| **RR Interval** | Time between heartbeats |
+| **SDNN** | HRV variation |
+| **RMSSD** | Short term HRV |
+| **pNN50** | Heart rhythm variability |
+
+### Signal Quality Checking
+
+**File:** `signal_quality.py`
+
+Checks:
+
+- Electrode connection
+- Noise level
+- Invalid ECG
+
+Poor signals are classified as **`UNRELIABLE`**.
+
+---
+
+## Layer 2: AI Prediction Models
+
+**Location:** `src/layer2/`
+
+Layer 2 contains two separate deep learning models:
+
+1. Arrhythmia Detection Model
+2. Myocardial Infarction Detection Model
+
+Separate models are used because arrhythmia and MI represent different cardiac conditions.
+
+### CNN + LSTM Architecture
+
+Both models use **CNN + LSTM**.
+
+**CNN** — learns local ECG waveform features (QRS morphology, P wave, T wave, ST segment):
+
+```mermaid
+flowchart LR
+    Sig[ECG Signal] --> CNN
+    CNN --> WF[Waveform Features]
+```
+
+**LSTM** — learns temporal ECG patterns (heartbeat sequence, rhythm changes, RR relationship):
+
+```mermaid
+flowchart LR
+    B1[Beat 1] --> B2[Beat 2] --> B3[Beat 3] --> B4[Beat 4] --> LSTM
+```
+
+## Why CNN + LSTM?
+
+ECG contains two important characteristics:
+
+| Question | Handled by |
+|---|---|
+| **Spatial** — "What does one heartbeat look like?" | CNN |
+| **Temporal** — "How do heartbeats change over time?" | LSTM |
+
+**Therefore: CNN + LSTM = Morphology + Rhythm Understanding**
+
+---
+
+## Arrhythmia Detection Model
+
+| | |
+|---|---|
+| **Purpose** | Detect abnormal heart rhythm |
+| **Output** | `Normal` or `Abnormal` |
+| **Model** | CNN + LSTM Binary Classifier |
+| **Model file** | `data/ad8232_binary_arrhythmia_model.pt` |
+
+### Arrhythmia Dataset
+
+**Datasets used:** MIT-BIH Arrhythmia Database + MIT Supraventricular Arrhythmia Database
+
+```
+data/
+├── mitdb/
+└── svdb/
+```
+
+**Why MIT-BIH?** One of the most widely used ECG arrhythmia datasets. It provides ECG recordings, beat annotations, and different rhythm abnormalities (normal rhythm, PVC, PAC, bundle branch block). Suitable because arrhythmia depends mainly on beat morphology, rhythm variation, and RR interval changes.
+
+**Why MIT-SV?** Provides additional supraventricular arrhythmias and atrial rhythm abnormalities. Combining MIT-BIH + MIT-SV creates better arrhythmia diversity.
+
+---
+
+## Myocardial Infarction Detection Model
+
+| | |
+|---|---|
+| **Purpose** | Detect ECG patterns related to myocardial infarction |
+| **Output** | `Normal` or `MI` |
+| **Model** | CNN + LSTM Binary Classifier |
+| **Model file** | `data/mi_model.pt` |
+
+### MI Dataset
+
+**Dataset:** PTB Diagnostic ECG Database
+
+```
+data/
+└── ptbdb/
+```
+
+**Why PTBDB?** Contains healthy control ECG, myocardial infarction ECG, and clinically diagnosed cases, with MI-related ECG characteristics (ST changes, Q wave abnormalities, T wave changes).
+
+---
+
+## Why Different Datasets?
+
+Arrhythmia and MI are different problems — **arrhythmia** is an electrical rhythm abnormality, while **MI** is heart muscle damage / ischemia. They require different ECG patterns.
+
+```mermaid
+flowchart LR
+    A["MIT-BIH + MIT-SV"] --> B[Arrhythmia Detection]
+    C[PTBDB] --> D[MI Detection]
+
+    classDef dataset fill:#4169e1,stroke:#2a4aa8,color:#fff
+    classDef task fill:#ee4c2c,stroke:#a8331d,color:#fff
+    class A,C dataset
+    class B,D task
+```
+
+---
+
+## Dataset Setup
+
+Required folder structure:
+
+```
+ai-training/
+└── data/
+    ├── mitdb/
+    ├── svdb/
+    └── ptbdb/
+```
+
+**Dataset downloads:**
+
+| Dataset | Source | Place in |
+|---|---|---|
+| MIT-BIH | https://physionet.org/content/mitdb/ | `data/mitdb/` |
+| MIT-SV | https://physionet.org/content/svdb/ | `data/svdb/` |
+| PTBDB | https://physionet.org/content/ptbdb/ | `data/ptbdb/` |
+
+---
+
+## Installation
+
+Create environment:
+
+```bash
+python -m venv venv
+```
+
+Activate (Mac/Linux):
+
+```bash
+source venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## Data Preparation
+
+### Arrhythmia Dataset
+
+```bash
+python prepare_data.py
+```
+
+Creates: `signals.npy`, `labels.npy`
+
+### MI Dataset
+
+```bash
+python prepare_mi_data.py
+```
+
+Creates: `signals_mi.npy`, `labels_mi.npy`
+
+---
+
+## Training Models
+
+### Train Arrhythmia Model
+
+```bash
+python train.py
+```
+
+Output: `ecg_model.pt`
+
+### Train MI Model
+
+```bash
+python train_mi.py
+```
+
+Output: `mi_model.pt`
+
+---
+
+## Model Evaluation
+
+### Arrhythmia Evaluation
+
+```bash
+python evaluate.py
+```
+
+Generates: `confusion_matrix.png`, `roc_curve.png`
+
+### MI Evaluation
+
+```bash
+python evaluate_mi.py
+```
+
+Generates: `mi_confusion_matrix.png`, `mi_roc_curve.png`
+
+---
+
+## AI Inference Pipeline
+
+**Main file:** `src/services/inference.py`
+
+```mermaid
+flowchart TD
+    Input[ECG Input] --> L1[Layer 1 Processing]
+    L1 --> Arr[Arrhythmia CNN-LSTM]
+    Arr --> MI[MI CNN-LSTM]
+    MI --> DE[Decision Engine]
+    DE --> Exp[Explanation Generator]
 
     classDef stage fill:#4169e1,stroke:#2a4aa8,color:#fff
     classDef model fill:#ee4c2c,stroke:#a8331d,color:#fff
     classDef decide fill:#f6b026,stroke:#a87218,color:#000
 
-    class Signal,L1,L3 stage
-    class L2,Arr,MI model
-    class DE decide
+    class Input,L1 stage
+    class Arr,MI model
+    class DE,Exp decide
 ```
 
 ---
 
-## AI Models
+## Layer 2: Decision Engine
 
-### Arrhythmia Detection
+**Files:** `decision_pipeline.py`, `rule_engine.py`
 
-| | |
-|---|---|
-| **Model** | CNN + LSTM |
-| **Dataset** | MIT-BIH Arrhythmia Database + MIT Supraventricular Arrhythmia Database |
-| **Purpose** | Detect abnormal heart rhythms |
+Combines:
 
-Examples detected: Normal rhythm, PVC, PAC, and other rhythm abnormalities.
+- AI predictions
+- ECG features
+- Signal quality
 
-### Myocardial Infarction Detection
-
-| | |
-|---|---|
-| **Model** | CNN + LSTM |
-| **Dataset** | PTB Diagnostic ECG Database |
-| **Purpose** | Detect ECG patterns related to myocardial infarction |
-
-The model learns: ST abnormalities, ECG morphology changes, and MI-related waveform patterns.
-
----
-
-## Why CNN + LSTM?
-
-ECG signals contain two important types of information:
-
-| Network | Learns |
-|---|---|
-| **CNN** | Waveform shape, QRS morphology, local ECG patterns |
-| **LSTM** | Heartbeat sequence, rhythm changes, temporal dependencies |
-
-**Combining CNN + LSTM = ECG morphology understanding + rhythm understanding.**
-
----
-
-## Wearable Hardware
-
-| | |
-|---|---|
-| **Platform** | ESP32 |
-| **Sensors** | ECG sensor, Accelerometer |
-
-The wearable device collects:
-
-- ECG samples
-- Heart rate
-- Motion information
-- Fall detection information
-
-**Communication:** ESP32 → Backend, via a REST API over HTTP.
-
-> [!WARNING]
-> This was previously documented as WebSocket — checked against the actual backend code (`package.json` has no `ws`/`socket.io` dependency, and `/api/ecg/ingest` is a plain Express `POST` route), so this has been corrected to REST/HTTP.
-
----
-
-## Complete Data Flow
-
-```mermaid
-flowchart TD
-    S1["1. ECG Sensor captures signal"] --> S2["2. ESP32 processes and sends data"]
-    S2 --> S3["3. Backend receives ECG packet"]
-    S3 --> S4["4. Data stored in database"]
-    S4 --> S5["5. AI service analyzes ECG"]
-    S5 --> S6["6. CNN-LSTM models generate prediction"]
-    S6 --> S7["7. Decision engine calculates risk"]
-    S7 --> S8["8. Frontend displays result"]
-    S8 --> S9["9. Notification sent if required"]
-```
-
----
-
-## Features
-
-### ECG Monitoring
-- Real-time ECG streaming
-- ECG waveform visualization
-- Signal quality checking
-
-### Cardiac Analysis
-- Heart rate monitoring
-- HRV calculation
-- Arrhythmia detection
-- MI risk screening
-
-### AI-Based Risk Assessment
-
-Possible outputs:
+**Outputs:**
 
 ![LOW](https://img.shields.io/badge/risk-LOW-brightgreen?style=for-the-badge)
 ![MODERATE](https://img.shields.io/badge/risk-MODERATE-yellow?style=for-the-badge)
@@ -300,229 +443,143 @@ Possible outputs:
 ![CRITICAL](https://img.shields.io/badge/risk-CRITICAL-red?style=for-the-badge)
 ![UNRELIABLE](https://img.shields.io/badge/risk-UNRELIABLE-lightgrey?style=for-the-badge)
 
-### Emergency Support
+---
 
-The system can:
+## Layer 3: Explanation System
 
-- Notify users
-- Notify family members
-- Send emergency alerts
+**Location:** `src/layer3/`
+
+**Components:**
+
+```
+layer3/
+├── gemini_explainer.py
+├── groq_explainer.py
+└── local_llm_explainer.py
+```
+
+**Purpose:** convert AI output into understandable reports.
+
+**Example:**
+
+```
+Risk Level: HIGH
+
+Possible cardiac abnormality detected.
+Medical assessment recommended.
+```
 
 ---
 
-## Repository Structure
+## Running the AI API
 
-> [!WARNING]
-> **Correction from the original doc:** the frontend isn't in its own `frontend/` folder — its source (`components/`, `pages/`, `services/`, `routes/`, `store/`, etc.) lives directly under `src/` at the repository root, alongside `vite.config.js`, `index.html`, and `package.json`. The tree below reflects the real, current layout. This also affects the [Installation](#installation) commands further down.
+Start:
+
+```bash
+python src/api/main.py
+```
+
+**Endpoint:** `POST /predict`
+
+**Example request:**
+
+```json
+{
+  "ecg": [0.12, 0.15, 0.18],
+  "sampling_rate": 250
+}
+```
+
+**Example response:**
+
+```json
+{
+  "arrhythmia": "normal",
+  "MI": "normal",
+  "risk": "LOW"
+}
+```
+
+---
+
+## Project Structure
 
 <details>
-<summary>📁 Click to expand full repository tree</summary>
+<summary>📁 Click to expand full project tree</summary>
 
 ```
-CardiShirt/
+ai-training/
+├── data/
+│   ├── mitdb/
+│   ├── svdb/
+│   └── ptbdb/
 │
-├── src/                      # Frontend source (React + Vite)
-│   ├── components/
-│   ├── pages/
-│   ├── services/
-│   ├── routes/
-│   └── store/
-├── public/
-├── index.html
-├── vite.config.js
-├── package.json
+├── src/
+│   ├── api/
+│   │   ├── main.py
+│   │   └── schemas.py
+│   │
+│   ├── layer1/
+│   │   ├── filtering.py
+│   │   ├── peak_detection.py
+│   │   ├── features.py
+│   │   ├── morphology.py
+│   │   └── signal_quality.py
+│   │
+│   ├── layer2/
+│   │   ├── arrhythmia_inference.py
+│   │   ├── mi_inference.py
+│   │   ├── decision_pipeline.py
+│   │   └── rule_engine.py
+│   │
+│   ├── layer3/
+│   │   └── (explanation modules)
+│   │
+│   └── services/
+│       └── inference.py
 │
-├── backend/
-│   ├── controllers/
-│   ├── routes/
-│   ├── services/
-│   ├── prisma/
-│   └── server.js
+├── train.py
+├── train_mi.py
+├── evaluate.py
+├── evaluate_mi.py
 │
-├── ai-training/
-│   ├── data/
-│   ├── src/
-│   ├── models/
-│   ├── train.py
-│   ├── train_mi.py
-│   └── README.md
+├── model.py
+├── mi_model.py
 │
-├── hardwareCode/             # ESP32 firmware
-│
-└── README.md
+└── requirements.txt
 ```
 
 </details>
 
 ---
 
-## Installation
+## Summary
 
-### Clone Repository
+CardiShirt AI combines:
 
-```bash
-git clone https://github.com/yourusername/CardiShirt.git
-cd CardiShirt
-```
+✅ ECG signal processing
+✅ CNN-LSTM deep learning models
+✅ MIT-BIH + MIT-SV arrhythmia datasets
+✅ PTBDB MI dataset
+✅ Risk decision engine
+✅ Explainable AI
 
-### Frontend Setup
+**The final system provides:**
 
-> Run from the **repository root** — there's no separate `frontend/` folder to `cd` into (see the [Repository Structure](#repository-structure) note above).
-
-```bash
-npm install
-npm run dev
-```
-
-Runs at:
-
-```
-http://localhost:5173
-```
-
-### Backend Setup
-
-```bash
-cd backend
-npm install
-```
-
-Configure your `.env` file (see [Environment Variables](#environment-variables)), then:
-
-```bash
-npm run dev
-```
-
-Backend runs at:
-
-```
-http://localhost:5000
-```
-
-### AI Setup
-
-```bash
-cd ai-training
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-Run:
-
-```bash
-python src/api/main.py
-```
-
-AI API runs at:
-
-```
-http://localhost:8000
-```
-
----
-
-## Environment Variables
-
-> [!TIP]
-> **Expanded from the original doc** to match what the backend actually requires today — the AI-explanation and family-notification features need a few keys that weren't previously listed.
-
-**Backend** (`backend/.env`):
-
-```env
-DATABASE_URL=
-JWT_SECRET=
-PORT=5000
-
-# AI-generated explanations (Gemini)
-GEMINI_API_KEY=
-
-# Family/emergency notifications
-TELEGRAM_BOT_TOKEN=
-TWILIO_ACCOUNT_SID=
-TWILIO_AUTH_TOKEN=
-TWILIO_PHONE_NUMBER=
-
-# Optional — tunes how device readings roll into daily metrics
-DEVICE_SAMPLE_INTERVAL_MIN=1
-```
-
-**Frontend** (`.env`, repository root):
-
-```env
-VITE_API_URL=
-```
-
-**AI** (`ai-training/.env`):
-
-```env
-MODEL_PATH=
-```
-
----
-
-## Future Improvements
-
-- Larger multi-lead ECG support
-- Mobile application
-- Cloud deployment
-- Federated learning
-- More cardiac disease classification
-- Clinical validation
-
----
-
-## Project Goal
-
-CardiShirt aims to build an affordable AI-powered wearable ECG monitoring platform that enables early cardiac risk screening and continuous health monitoring.
-
----
-
-## Technologies Used
-
-<table>
-<tr>
-<td valign="top">
-
-**Frontend**
-- React.js
-- Vite
-- Redux Toolkit
-- Axios
-
-</td>
-<td valign="top">
-
-**Backend**
-- Node.js
-- Express.js
-- Prisma
-- PostgreSQL
-
-</td>
-<td valign="top">
-
-**AI**
-- Python
-- PyTorch
-- CNN-LSTM
-- FastAPI
-
-</td>
-<td valign="top">
-
-**Hardware**
-- ESP32
-- ECG Sensor
-- Accelerometer
-
-</td>
-</tr>
-</table>
+- Real-time ECG analysis
+- Arrhythmia detection
+- MI detection
+- Wearable ECG compatibility
+- Explainable cardiac risk screening
 
 <div align="center">
 
 ---
+
+**CardiShirt AI** — AI-powered wearable ECG monitoring system.
+
+</div>
+
 
 🫀 **Made for early cardiac risk screening, one heartbeat at a time.**
 
