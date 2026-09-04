@@ -26,6 +26,8 @@ model User {
   devices           Device[]
   alerts            Alert[]
   emergencyContacts EmergencyContact[]
+  dailyMetrics      DailyMetric[]
+  journalEntries    JournalEntry[]
 }
 
 model Device {
@@ -111,4 +113,76 @@ enum AlertSeverity {
   MEDIUM
   HIGH
   CRITICAL
+}
+
+// =========================================================
+// Added for the Risk & Trends and Cardiac Diary pages.
+// Nothing above this line was changed.
+// =========================================================
+
+/// One row per user per calendar day — the rollup the Risk and Diary
+/// pages read from. Kept up to date incrementally by ecgController's
+/// ingestEcg (see the "roll into today's DailyMetric" step there), and
+/// backfilled with realistic history by prisma/seed.js for demo purposes.
+model DailyMetric {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date            DateTime // normalized to local midnight — one record per user/day
+
+  restingHr       Int?     // BPM
+  hrv             Float?   // RMSSD, ms
+  rhythmStability Float?   // 0-100 %
+  riskScore       Int?     // 0-100, computed by services/riskScoreService.js
+  wornMinutes     Int?     // minutes the device was worn that day
+  activityLevel   Float?   // arbitrary 0-100 index
+  sleepHr         Int?     // average overnight HR, BPM
+
+  // Cached AI narratives (Gemini via services/aiService.js) so we don't
+  // regenerate on every page load.
+  aiDiaryText     String?  @db.Text
+  aiRiskText      String?  @db.Text
+
+  // Chart data for the Diary page.
+  heartRateSeries Json?    // [{ hour, minute, bpm }, ...]
+  rrIntervals     Json?    // [[rrN, rrN+1], ...] pairs for the Poincaré plot
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  journalEntries  JournalEntry[]
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+/// User-entered or system-logged items for the Diary page's "Events
+/// Timeline" and "Notes" — the real backing store for the check-in /
+/// medication / symptom buttons already on DashboardPage (not yet wired
+/// up there — this model is ready whenever you connect them).
+model JournalEntry {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  dailyMetricId String?
+  dailyMetric   DailyMetric? @relation(fields: [dailyMetricId], references: [id], onDelete: SetNull)
+
+  occurredAt    DateTime
+  type          JournalType
+  text          String
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([userId, occurredAt])
+}
+
+enum JournalType {
+  CHECK_IN
+  MEDICATION
+  SYMPTOM
+  NOTE
+  AI_SUMMARY
 }
