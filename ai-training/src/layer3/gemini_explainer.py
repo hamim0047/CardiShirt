@@ -26,60 +26,65 @@ load_dotenv(
 
 
 
-
 class GeminiECGExplainer:
-
 
 
     def __init__(self):
 
 
         api_key = os.getenv(
-
             "GEMINI_API_KEY"
-
         )
 
 
         if not api_key:
 
-
             raise ValueError(
-
                 "GEMINI_API_KEY missing"
-
             )
 
 
-
         self.client = genai.Client(
-
             api_key=api_key
-
         )
 
+
+        self.model = "gemini-3.6-flash"
 
 
 
     def explain(self, layer2_result):
 
 
-        prompt = build_ecg_prompt(
-
-            layer2_result
-
-        )
+        try:
 
 
-
-        response = self.client.models.generate_content(
-
-            model="gemini-3.6-flash",
-
-            contents=prompt
-
-        )
+            prompt = build_ecg_prompt(
+                layer2_result
+            )
 
 
+            response = self.client.models.generate_content(
 
-        return response.text
+                model=self.model,
+
+                contents=prompt
+
+            )
+
+
+            return response.text
+
+
+
+        except Exception as e:
+
+
+            print(
+                "Gemini failed:"
+            )
+
+            print(e)
+
+
+            return None

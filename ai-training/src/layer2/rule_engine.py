@@ -20,21 +20,21 @@ def risk_engine(
 
 
     hrv = ecg_metrics.get(
-        "hrv",
-        {}
-    )
+    "hrv",
+    {}
+    ) or {}
 
 
     morphology = ecg_metrics.get(
-        "morphology",
-        {}
-    )
+    "morphology",
+    {}
+    ) or {}
 
 
     quality = ecg_metrics.get(
-        "signalQualityFlags",
-        []
-    )
+    "signalQualityFlags",
+    []
+    ) or []
 
 
     sdnn = hrv.get(
@@ -101,7 +101,7 @@ def risk_engine(
 
     and
 
-    abs(st) > 0.10
+    abs(st or 0) > 0.10
 
     and
 
