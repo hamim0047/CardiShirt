@@ -4,8 +4,6 @@ from api.schemas import ECGRequest
 
 from services.inference import ECGInference
 
-import wfdb
-
 
 
 app = FastAPI(
@@ -18,84 +16,30 @@ app = FastAPI(
 
 
 
-# Load AI once
+# Load models once
 
 engine = ECGInference()
 
 
 
-
 @app.get("/")
-
 def home():
 
     return {
 
         "status":
-
         "CardiShirt AI running"
 
     }
 
 
 
-
-
-# ======================================
-# GET ECG DATASET SAMPLE
-# ======================================
-
-@app.get("/sample-ecg")
-def sample_ecg():
-
-
-    RECORD_PATH = "../data/ptbdb/patient229/s0453_re"
-
-
-    record = wfdb.rdrecord(
-        RECORD_PATH
-    )
-
-
-    # Lead I
-
-    signal = record.p_signal[:,0]
-
-
-    # Reduce data only for dashboard visualization
-    # Keep original ECG for AI prediction
-
-    display_signal = signal[::20]
-
-
-
-    return {
-
-
-        "ecg":
-
-        display_signal.tolist(),
-
-
-
-        "sampling_rate":
-
-        int(record.fs / 20)
-
-
-    }
-
-
-
-
-
-
 # ======================================
 # AI PREDICTION
+# POST /predict
 # ======================================
 
 @app.post("/predict")
-
 def predict_ecg(
 
     request: ECGRequest
