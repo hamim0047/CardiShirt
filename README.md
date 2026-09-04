@@ -1,157 +1,99 @@
-# CardiShirt 
+<div align="center">
 
-## AI-Powered Wearable ECG Monitoring System
+# 🫀 CardiShirt
 
-CardiShirt is an intelligent wearable healthcare system that combines **IoT, Artificial Intelligence, and Web Technologies** to provide real-time ECG monitoring and cardiovascular risk screening.
+### AI-Powered Wearable ECG Monitoring System
 
-The system uses a wearable ECG device powered by ESP32, a backend communication platform, and deep learning-based ECG analysis models to detect cardiac abnormalities and provide understandable health insights.
+*Continuous cardiac monitoring and early risk screening, powered by IoT and deep learning.*
 
+![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
+![ESP32](https://img.shields.io/badge/ESP32-E7352C?style=for-the-badge&logo=espressif&logoColor=white)
+
+</div>
 
 ---
 
-# Project Overview
+## Table of Contents
 
+- [Project Overview](#project-overview)
+- [System Architecture](#system-architecture)
+- [Main Components](#main-components)
+- [AI Architecture](#ai-architecture)
+- [AI Models](#ai-models)
+- [Why CNN + LSTM?](#why-cnn--lstm)
+- [Wearable Hardware](#wearable-hardware)
+- [Complete Data Flow](#complete-data-flow)
+- [Features](#features)
+- [Repository Structure](#repository-structure)
+- [Installation](#installation)
+- [Environment Variables](#environment-variables)
+- [Future Improvements](#future-improvements)
+- [Technologies Used](#technologies-used)
 
-CardiShirt aims to provide an affordable and intelligent cardiac monitoring solution by continuously collecting ECG signals from a wearable device and analyzing them using AI.
+---
 
+## Project Overview
+
+CardiShirt aims to provide an **affordable and intelligent cardiac monitoring solution** by continuously collecting ECG signals from a wearable device and analyzing them using AI.
 
 The system can:
 
-
-- Capture real-time ECG signals
-- Monitor heart rate
-- Calculate HRV features
-- Detect abnormal rhythms
-- Detect possible myocardial infarction patterns
-- Generate cardiac risk levels
-- Provide AI-generated explanations
-- Notify users and emergency contacts
-
+- 📡 Capture real-time ECG signals
+- ❤️ Monitor heart rate
+- 📊 Calculate HRV features
+- 🔍 Detect abnormal rhythms
+- 🚨 Detect possible myocardial infarction patterns
+- 🧮 Generate cardiac risk levels
+- 🤖 Provide AI-generated explanations
+- 📣 Notify users and emergency contacts
 
 ---
 
-# System Architecture
+## System Architecture
 
+```mermaid
+flowchart TD
+    ESP32[CardiShirt Wearable — ESP32] --> Sensor[ECG Sensor Module]
+    Sensor --> Backend[Backend Server]
 
-```
-                         CardiShirt Wearable
+    Backend --> DB[(Database)]
+    Backend --> AIS[AI Service]
+    Backend --> Notif[Notification]
 
+    AIS --> Models[CNN + LSTM Models]
+    Models --> Arr["Arrhythmia Model<br/>MIT-BIH + MIT-SVDB"]
+    Models --> MI["MI Model<br/>PTBDB"]
 
-                              ESP32
-
-                                |
-
-                                |
-
-                         ECG Sensor Module
-
-                                |
-
-                                ↓
-
-
-                    =========================
-
-                         Backend Server
-
-                    =========================
-
-
-                                |
-
-        -------------------------------------------------
-
-        |                       |                       |
-
-        ↓                       ↓                       ↓
-
-
-    Database              AI Service              Notification
-
-
-        |                       |
-
-        |                       ↓
-
-
-        |              CNN + LSTM Models
-
-
-        |                       |
-
-        |          ----------------------------
-
-        |          |                          |
-
-        |          ↓                          ↓
-
-
-        |   Arrhythmia Model              MI Model
-
-        |   MIT-BIH + MIT-SV              PTBDB
-
-
-        |
-
-        ↓
-
-
-                  Frontend Dashboard
-
-
+    DB --> FE[Frontend Dashboard]
 ```
 
 ---
 
-# Main Components
-
+## Main Components
 
 CardiShirt consists of three major parts:
 
-
 ```
 CardiShirt
-
 │
-
 ├── Frontend
-
-│
-
 ├── Backend
-
-│
-
 └── AI Training Pipeline
-
 ```
 
+### 1. Frontend
 
----
-
-# 1. Frontend
-
-
-Technology:
-
-
-```
-React.js + Vite
-
-```
-
-
-Location:
-
-
-```
-/
-
-```
-
+| | |
+|---|---|
+| **Technology** | React.js + Vite |
+| **Location** | Repository root — see the [correction note](#repository-structure) below |
 
 The frontend provides the user interface for:
-
 
 - Dashboard monitoring
 - ECG visualization
@@ -161,78 +103,31 @@ The frontend provides the user interface for:
 - Emergency contacts
 - User settings
 
+**Main features:**
 
-Main features:
+✅ Real-time health dashboard
+✅ ECG waveform visualization
+✅ AI prediction display
+✅ Alert management
+✅ Health history tracking
 
+### 2. Backend
 
-✅ Real-time health dashboard  
-✅ ECG waveform visualization  
-✅ AI prediction display  
-✅ Alert management  
-✅ Health history tracking  
-
-
-Detailed documentation:
-
-
-```
-Frontend README
-
-```
-
-
----
-
-# 2. Backend
-
-
-Technology:
-
-
-```
-Node.js
-
-Express.js
-
-Prisma ORM
-
-PostgreSQL
-
-```
-
-
-Location:
-
-
-```
-backend/
-
-```
-
+| | |
+|---|---|
+| **Technology** | Node.js, Express.js, Prisma ORM, PostgreSQL |
+| **Location** | `backend/` |
 
 The backend works as the communication bridge between:
 
-
-```
-Frontend
-
-      |
-
-Backend
-
-      |
-
-ESP32 Device
-
-      |
-
-AI Service
-
+```mermaid
+flowchart LR
+    FE[Frontend] --> BE[Backend]
+    BE --> ESP[ESP32 Device]
+    BE --> AI[AI Service]
 ```
 
-
-Responsibilities:
-
+**Responsibilities:**
 
 - User authentication
 - Device management
@@ -242,48 +137,23 @@ Responsibilities:
 - Risk calculation
 - Emergency notification
 
-
-Main technologies:
-
+**Main technologies:**
 
 | Technology | Purpose |
-|-|-|
+|---|---|
 | Express.js | REST API |
 | Prisma | Database ORM |
 | PostgreSQL | Data storage |
 | JWT | Authentication |
-| WebSocket | ESP32 communication |
 
+### 3. AI Training Pipeline
 
----
-
-# 3. AI Training Pipeline
-
-
-Technology:
-
-
-```
-Python
-
-PyTorch
-
-FastAPI
-
-```
-
-
-Location:
-
-
-```
-ai-training/
-
-```
-
+| | |
+|---|---|
+| **Technology** | Python, PyTorch, FastAPI |
+| **Location** | `ai-training/` |
 
 The AI pipeline performs:
-
 
 - ECG preprocessing
 - Feature extraction
@@ -292,616 +162,277 @@ The AI pipeline performs:
 - Risk evaluation
 - Explanation generation
 
-
 ---
 
-# AI Architecture
+## AI Architecture
 
+```mermaid
+flowchart TD
+    Signal[ECG Signal] --> L1["Layer 1<br/>Signal Processing"]
+    L1 --> L2["Layer 2<br/>Deep Learning Models"]
 
-```
-                 ECG Signal
+    L2 --> Arr["Arrhythmia Model<br/>CNN + LSTM<br/>MIT-BIH + MIT-SVDB"]
+    L2 --> MI["MI Model<br/>CNN + LSTM<br/>PTBDB"]
 
+    Arr --> DE[Decision Engine]
+    MI --> DE
 
-                      |
-
-                      ↓
-
-
-              Layer 1
-
-        Signal Processing
-
-
-                      |
-
-                      ↓
-
-
-              Layer 2
-
-          Deep Learning Models
-
-
-          --------------------
-
-          |                  |
-
-          ↓                  ↓
-
-
-   Arrhythmia Model       MI Model
-
-
-    CNN + LSTM           CNN + LSTM
-
-
-     MIT-BIH              PTBDB
-
-     MIT-SV
-
-
-          |
-
-          ↓
-
-
-          Decision Engine
-
-
-          |
-
-          ↓
-
-
-              Layer 3
-
-        Explainable AI
-
-
+    DE --> L3["Layer 3<br/>Explainable AI"]
 ```
 
 ---
 
-# AI Models
+## AI Models
 
+### Arrhythmia Detection
 
-## Arrhythmia Detection
+| | |
+|---|---|
+| **Model** | CNN + LSTM |
+| **Dataset** | MIT-BIH Arrhythmia Database + MIT Supraventricular Arrhythmia Database |
+| **Purpose** | Detect abnormal heart rhythms |
 
+Examples detected: Normal rhythm, PVC, PAC, and other rhythm abnormalities.
 
-Model:
+### Myocardial Infarction Detection
 
+| | |
+|---|---|
+| **Model** | CNN + LSTM |
+| **Dataset** | PTB Diagnostic ECG Database |
+| **Purpose** | Detect ECG patterns related to myocardial infarction |
 
-```
-CNN + LSTM
-
-```
-
-
-Dataset:
-
-
-```
-MIT-BIH Arrhythmia Database
-
-+
-
-MIT Supraventricular Arrhythmia Database
-
-```
-
-
-Purpose:
-
-
-Detect abnormal heart rhythms.
-
-
-Examples:
-
-
-- Normal rhythm
-- PVC
-- PAC
-- Other rhythm abnormalities
-
-
+The model learns: ST abnormalities, ECG morphology changes, and MI-related waveform patterns.
 
 ---
 
-## Myocardial Infarction Detection
+## Why CNN + LSTM?
 
+ECG signals contain two important types of information:
 
-Model:
+| Network | Learns |
+|---|---|
+| **CNN** | Waveform shape, QRS morphology, local ECG patterns |
+| **LSTM** | Heartbeat sequence, rhythm changes, temporal dependencies |
 
-
-```
-CNN + LSTM
-
-```
-
-
-Dataset:
-
-
-```
-PTB Diagnostic ECG Database
-
-```
-
-
-Purpose:
-
-
-Detect ECG patterns related to myocardial infarction.
-
-
-The model learns:
-
-
-- ST abnormalities
-- ECG morphology changes
-- MI-related waveform patterns
-
-
+**Combining CNN + LSTM = ECG morphology understanding + rhythm understanding.**
 
 ---
 
-# Why CNN + LSTM?
+## Wearable Hardware
 
-
-ECG signals contain two important types of information.
-
-
-## CNN
-
-
-Learns:
-
-
-- Waveform shape
-- QRS morphology
-- Local ECG patterns
-
-
-
-## LSTM
-
-
-Learns:
-
-
-- Heartbeat sequence
-- Rhythm changes
-- Temporal dependencies
-
-
-
-Combining:
-
-
-```
-CNN
-
-+
-
-LSTM
-
-
-=
-
-ECG morphology + rhythm understanding
-
-```
-
-
----
-
-# Wearable Hardware
-
-
-Hardware platform:
-
-
-```
-ESP32
-
-```
-
-
-Connected sensors:
-
-
-- ECG sensor
-- Accelerometer
-
+| | |
+|---|---|
+| **Platform** | ESP32 |
+| **Sensors** | ECG sensor, Accelerometer |
 
 The wearable device collects:
-
 
 - ECG samples
 - Heart rate
 - Motion information
 - Fall detection information
 
-
-Communication:
-
-
-```
-ESP32
-
-    |
-
- WebSocket
-
-    |
-
-Backend
-
-```
-
+**Communication:** ESP32 → Backend, via a REST API over HTTP *(see the [correction note](#repository-structure) below — this was previously documented as WebSocket)*.
 
 ---
 
-# Complete Data Flow
+## Complete Data Flow
 
-
+```mermaid
+flowchart TD
+    S1["1. ECG Sensor captures signal"] --> S2["2. ESP32 processes and sends data"]
+    S2 --> S3["3. Backend receives ECG packet"]
+    S3 --> S4["4. Data stored in database"]
+    S4 --> S5["5. AI service analyzes ECG"]
+    S5 --> S6["6. CNN-LSTM models generate prediction"]
+    S6 --> S7["7. Decision engine calculates risk"]
+    S7 --> S8["8. Frontend displays result"]
+    S8 --> S9["9. Notification sent if required"]
 ```
-1. ECG Sensor captures signal
-
-
-             ↓
-
-
-2. ESP32 processes and sends data
-
-
-             ↓
-
-
-3. Backend receives ECG packet
-
-
-             ↓
-
-
-4. Data stored in database
-
-
-             ↓
-
-
-5. AI service analyzes ECG
-
-
-             ↓
-
-
-6. CNN-LSTM models generate prediction
-
-
-             ↓
-
-
-7. Decision engine calculates risk
-
-
-             ↓
-
-
-8. Frontend displays result
-
-
-             ↓
-
-
-9. Notification sent if required
-
-```
-
 
 ---
 
-# Features
+## Features
 
-
-## ECG Monitoring
-
-
+### ECG Monitoring
 - Real-time ECG streaming
 - ECG waveform visualization
 - Signal quality checking
 
-
----
-
-## Cardiac Analysis
-
-
+### Cardiac Analysis
 - Heart rate monitoring
 - HRV calculation
 - Arrhythmia detection
 - MI risk screening
 
-
----
-
-## AI-Based Risk Assessment
-
+### AI-Based Risk Assessment
 
 Possible outputs:
 
+| Level | |
+|---|---|
+| 🟢 `LOW` | |
+| 🟡 `MODERATE` | |
+| 🟠 `HIGH` | |
+| 🔴 `CRITICAL` | |
+| ⚪ `UNRELIABLE` | |
 
-```
-LOW
-
-MODERATE
-
-HIGH
-
-CRITICAL
-
-UNRELIABLE
-
-```
-
-
----
-
-## Emergency Support
-
+### Emergency Support
 
 The system can:
-
 
 - Notify users
 - Notify family members
 - Send emergency alerts
 
-
 ---
 
-# Repository Structure
+## Repository Structure
 
+> **Correction from the original doc:** the frontend isn't in its own `frontend/` folder — its source (`components/`, `pages/`, `services/`, `routes/`, `store/`, etc.) lives directly under `src/` at the repository root, alongside `vite.config.js`, `index.html`, and `package.json`. The tree below reflects the real, current layout. This also affects the [Installation](#installation) commands further down.
 
 ```
 CardiShirt/
-
-
 │
-
-├── frontend/
-
-│
-
-│
-├── src/
-
+├── src/                      # Frontend source (React + Vite)
 │   ├── components/
-
 │   ├── pages/
-
 │   ├── services/
-
 │   ├── routes/
-
 │   └── store/
-
-
+├── public/
+├── index.html
+├── vite.config.js
+├── package.json
 │
-
 ├── backend/
-
+│   ├── controllers/
+│   ├── routes/
+│   ├── services/
+│   ├── prisma/
+│   └── server.js
 │
-
-│
-├── controllers/
-
-│
-
-├── routes/
-
-│
-
-├── services/
-
-│
-
-├── prisma/
-
-│
-
-└── server.js
-
-
-
-│
-
 ├── ai-training/
-
-
+│   ├── data/
+│   ├── src/
+│   ├── models/
+│   ├── train.py
+│   ├── train_mi.py
+│   └── README.md
 │
-├── data/
-
-├── src/
-
-├── models/
-
-├── train.py
-
-├── train_mi.py
-
-└── README.md
-
-
-
+├── hardwareCode/             # ESP32 firmware
 │
-
 └── README.md
-
 ```
-
 
 ---
 
-# Installation
+## Installation
 
-
-## Clone Repository
-
+### Clone Repository
 
 ```bash
 git clone https://github.com/yourusername/CardiShirt.git
-
 cd CardiShirt
-
 ```
 
+### Frontend Setup
 
----
-
-# Frontend Setup
-
+> Run from the **repository root** — there's no separate `frontend/` folder to `cd` into (see the [Repository Structure](#repository-structure) note above).
 
 ```bash
-cd frontend
-
 npm install
-
 npm run dev
-
 ```
 
-
-Runs:
-
+Runs at:
 
 ```
 http://localhost:5173
-
 ```
 
-
----
-
-# Backend Setup
-
+### Backend Setup
 
 ```bash
 cd backend
-
 npm install
-
 ```
 
-
-Configure:
-
-
-```
-.env
-
-```
-
-
-Run:
-
+Configure your `.env` file (see [Environment Variables](#environment-variables)), then:
 
 ```bash
 npm run dev
-
 ```
 
-
-Backend:
-
+Backend runs at:
 
 ```
 http://localhost:5000
-
 ```
 
-
----
-
-# AI Setup
-
+### AI Setup
 
 ```bash
 cd ai-training
-
 python -m venv venv
-
 source venv/bin/activate
-
 pip install -r requirements.txt
-
 ```
-
 
 Run:
 
-
 ```bash
 python src/api/main.py
-
 ```
 
-
-AI API:
-
+AI API runs at:
 
 ```
 http://localhost:8000
-
 ```
-
 
 ---
 
-# Environment Variables
+## Environment Variables
 
+> **Expanded from the original doc** to match what the backend actually requires today — the AI-explanation and family-notification features need a few keys that weren't previously listed.
 
-Backend:
-
+**Backend** (`backend/.env`):
 
 ```env
 DATABASE_URL=
-
 JWT_SECRET=
-
-AI_SERVER_URL=
-
 PORT=5000
 
+# AI-generated explanations (Gemini)
+GEMINI_API_KEY=
+
+# Family/emergency notifications
+TELEGRAM_BOT_TOKEN=
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_PHONE_NUMBER=
+
+# Optional — tunes how device readings roll into daily metrics
+DEVICE_SAMPLE_INTERVAL_MIN=1
 ```
 
-
-Frontend:
-
+**Frontend** (`.env`, repository root):
 
 ```env
 VITE_API_URL=
-
 ```
 
-
-AI:
-
+**AI** (`ai-training/.env`):
 
 ```env
 MODEL_PATH=
-
 ```
-
 
 ---
 
-# Future Improvements
-
-
-Possible future enhancements:
-
+## Future Improvements
 
 - Larger multi-lead ECG support
 - Mobile application
@@ -910,54 +441,52 @@ Possible future enhancements:
 - More cardiac disease classification
 - Clinical validation
 
-
 ---
 
-# Project Goal
-
+## Project Goal
 
 CardiShirt aims to build an affordable AI-powered wearable ECG monitoring platform that enables early cardiac risk screening and continuous health monitoring.
 
-
 ---
 
-# Technologies Used
+## Technologies Used
 
+<table>
+<tr>
+<td valign="top">
 
-## Frontend
-
+**Frontend**
 - React.js
 - Vite
 - Redux Toolkit
 - Axios
 
+</td>
+<td valign="top">
 
-## Backend
-
+**Backend**
 - Node.js
 - Express.js
 - Prisma
 - PostgreSQL
-- WebSocket
 
+</td>
+<td valign="top">
 
-## AI
-
+**AI**
 - Python
 - PyTorch
 - CNN-LSTM
 - FastAPI
 
+</td>
+<td valign="top">
 
-## Hardware
-
+**Hardware**
 - ESP32
 - ECG Sensor
 - Accelerometer
 
-
----
-
-# CardiShirt 
-
-## Intelligent Wearable ECG Monitoring Through AI
+</td>
+</tr>
+</table>
