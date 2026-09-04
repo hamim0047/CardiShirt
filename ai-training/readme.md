@@ -9,6 +9,7 @@
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![Status](https://img.shields.io/badge/status-active%20development-yellow?style=for-the-badge)
 
 </div>
 
@@ -76,6 +77,18 @@ flowchart TD
 
     DE --> L3["Layer 3<br/>Explanation System"]
     L3 --> Report[Final ECG Risk Report]
+
+    classDef hardware fill:#e7352c,stroke:#a6231a,color:#fff
+    classDef stage fill:#4169e1,stroke:#2a4aa8,color:#fff
+    classDef model fill:#ee4c2c,stroke:#a8331d,color:#fff
+    classDef decide fill:#f6b026,stroke:#a87218,color:#000
+    classDef out fill:#22c55e,stroke:#15803d,color:#fff
+
+    class Device,ESP32,Signal hardware
+    class AI,L1,L3 stage
+    class L2,Arr,MI model
+    class DE decide
+    class Report out
 ```
 
 ---
@@ -88,6 +101,9 @@ CardiShirt AI follows a three-layer architecture.
 flowchart LR
     L1["Layer 1<br/>ECG Signal Processing"] --> L2["Layer 2<br/>AI Disease Prediction"]
     L2 --> L3["Layer 3<br/>Explainable AI"]
+
+    classDef stage fill:#4169e1,stroke:#2a4aa8,color:#fff
+    class L1,L2,L3 stage
 ```
 
 | Layer | Name | Tasks |
@@ -273,6 +289,11 @@ Arrhythmia and MI are different problems — **arrhythmia** is an electrical rhy
 flowchart LR
     A["MIT-BIH + MIT-SV"] --> B[Arrhythmia Detection]
     C[PTBDB] --> D[MI Detection]
+
+    classDef dataset fill:#4169e1,stroke:#2a4aa8,color:#fff
+    classDef task fill:#ee4c2c,stroke:#a8331d,color:#fff
+    class A,C dataset
+    class B,D task
 ```
 
 ---
@@ -392,6 +413,14 @@ flowchart TD
     Arr --> MI[MI CNN-LSTM]
     MI --> DE[Decision Engine]
     DE --> Exp[Explanation Generator]
+
+    classDef stage fill:#4169e1,stroke:#2a4aa8,color:#fff
+    classDef model fill:#ee4c2c,stroke:#a8331d,color:#fff
+    classDef decide fill:#f6b026,stroke:#a87218,color:#000
+
+    class Input,L1 stage
+    class Arr,MI model
+    class DE,Exp decide
 ```
 
 ---
@@ -406,7 +435,13 @@ Combines:
 - ECG features
 - Signal quality
 
-**Outputs:** `LOW` · `MODERATE` · `HIGH` · `CRITICAL` · `UNRELIABLE`
+**Outputs:**
+
+![LOW](https://img.shields.io/badge/risk-LOW-brightgreen?style=for-the-badge)
+![MODERATE](https://img.shields.io/badge/risk-MODERATE-yellow?style=for-the-badge)
+![HIGH](https://img.shields.io/badge/risk-HIGH-orange?style=for-the-badge)
+![CRITICAL](https://img.shields.io/badge/risk-CRITICAL-red?style=for-the-badge)
+![UNRELIABLE](https://img.shields.io/badge/risk-UNRELIABLE-lightgrey?style=for-the-badge)
 
 ---
 
@@ -469,6 +504,9 @@ python src/api/main.py
 
 ## Project Structure
 
+<details>
+<summary>📁 Click to expand full project tree</summary>
+
 ```
 ai-training/
 ├── data/
@@ -510,6 +548,8 @@ ai-training/
 │
 └── requirements.txt
 ```
+
+</details>
 
 ---
 
