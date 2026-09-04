@@ -1,15 +1,11 @@
 const express = require("express");
-const authMiddleware = require("../middleware/authMiddleware");
-const {
-  ingestEcg,
-  getMyLatestEcg,
-  getMyEcgHistory,
-} = require("../controllers/ecgController");
 
 const router = express.Router();
 
-router.post("/ingest", ingestEcg);
-router.get("/latest", authMiddleware, getMyLatestEcg);
-router.get("/history", authMiddleware, getMyEcgHistory);
+const { analyzeECG, getLatestEcg } = require("../controllers/ecgController");
+
+router.get("/latest", getLatestEcg);
+
+router.post("/analyze", analyzeECG);
 
 module.exports = router;

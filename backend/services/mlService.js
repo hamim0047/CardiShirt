@@ -1,13 +1,29 @@
 const axios = require("axios");
 
-async function predictECG(ecgData) {
-  const res = await axios.post("http://localhost:8000/predict", {
-    lead1: ecgData.lead1,
-    lead2: ecgData.lead2,
-    lead3: ecgData.lead3,
-  });
+const AI_URL = "http://localhost:8000";
 
-  return res.data;
+function normalizeECG(signal) {
+  const mean = signal.reduce((a, b) => a + b, 0) / signal.length;
+
+  const std = Math.sqrt(
+    signal.map((x) => (x - mean) ** 2).reduce((a, b) => a + b, 0) /
+      signal.length,
+  );
+
+  return signal.map((x) => (x - mean) / (std || 1));
 }
 
-module.exports = { predictECG };
+async function predictECG(ecgData) {
+  const normalizedECG = normalizeECG(ecgData.ecg);
+
+  const response = await axios.post(`${AI_URL}/predict`, {
+    ecg: normalizedECG,
+    sampling_rate: 250,
+  });
+
+  return response.data;
+}
+
+module.exports = {
+  predictECG,
+};

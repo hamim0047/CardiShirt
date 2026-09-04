@@ -2,8 +2,8 @@ const express = require("express");
 const router = express.Router();
 
 const { handleHeartAssistantChat } = require("../controllers/chatController");
-const { authenticate } = require("../middlewares/authMiddleware");
+const authMiddleware = require("../middleware/authMiddleware");
 
-router.post("/heart-assistant", authenticate, handleHeartAssistantChat);
+router.post("/heart-assistant", authMiddleware, handleHeartAssistantChat);
 
 module.exports = router;
