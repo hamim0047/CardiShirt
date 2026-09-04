@@ -1,0 +1,78 @@
+version: "3.9"
+
+
+services:
+
+
+  ai-engine:
+
+    build:
+
+      context: ./ai-training
+
+    container_name: cardishirt-ai
+
+
+    ports:
+
+      - "8000:8000"
+
+
+    volumes:
+
+      - ./ai-training/data:/app/data
+      - ./ai-training/models:/app/models
+
+
+
+  backend:
+
+
+    build:
+
+      context: ./backend
+
+
+    container_name: cardishirt-backend
+
+
+    ports:
+
+      - "5000:5000"
+
+
+    environment:
+
+      AI_URL: http://ai-engine:8000
+
+
+    depends_on:
+
+      - ai-engine
+
+
+
+  frontend:
+
+
+    build:
+
+      context: ./frontend
+
+
+    container_name: cardishirt-frontend
+
+
+    ports:
+
+      - "5173:5173"
+
+
+    environment:
+
+      VITE_API_URL: http://localhost:5000/api
+
+
+    depends_on:
+
+      - backend
