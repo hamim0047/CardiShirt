@@ -1,4 +1,4 @@
-import { Mic, Send } from "lucide-react";
+import { Mic, Send, PanelRightClose } from "lucide-react";
 
 export default function AIChatPanel({
   chatMessages = [],
@@ -8,13 +8,25 @@ export default function AIChatPanel({
   chatLoading = false,
   quickQuestions = [],
   summaryText = "Viewing today's data, live ECG, current vitals",
+  onCollapse,
 }) {
   return (
     <div className="flex h-full flex-col">
       <div className="border-b border-slate-800 px-5 py-4">
-        <div className="flex items-center gap-2">
-          <p className="text-2xl font-semibold text-white">CardiShirt AI</p>
-          <span className="h-2 w-2 rounded-full bg-emerald-400" />
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <p className="text-2xl font-semibold text-white">CardiShirt AI</p>
+            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+          </div>
+          {onCollapse ? (
+            <button
+              onClick={onCollapse}
+              className="rounded-lg p-1.5 text-slate-500 hover:bg-[#151c42] hover:text-white"
+              title="Collapse"
+            >
+              <PanelRightClose className="h-4 w-4" />
+            </button>
+          ) : null}
         </div>
 
         <p className="mt-2 text-sm text-slate-500">
@@ -79,7 +91,7 @@ export default function AIChatPanel({
           ))}
         </div>
 
-        <div className="flex items-center gap-2 rounded-2xl bg-[#1a204a] p-2">
+        <div className="flex min-w-0 items-center gap-2 rounded-2xl bg-[#1a204a] p-2">
           <input
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
@@ -89,7 +101,7 @@ export default function AIChatPanel({
               }
             }}
             placeholder="Ask about your heart today..."
-            className="flex-1 bg-transparent px-3 py-2 text-white outline-none placeholder:text-slate-500"
+            className="min-w-0 flex-1 bg-transparent px-3 py-2 text-white outline-none placeholder:text-slate-500"
           />
 
           <button className="rounded-xl bg-[#12183a] px-4 py-3 text-slate-400">

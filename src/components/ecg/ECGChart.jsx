@@ -1,5 +1,5 @@
 export default function ECGChart({ data }) {
-  const lead = data?.lead1 || [];
+  const lead = data || [];
 
   return (
     <div className="relative h-[320px] w-full overflow-hidden rounded-2xl border border-slate-800 bg-[#070b1d]">
@@ -24,13 +24,21 @@ function generatePath(data) {
   }
 
   const maxPoints = 240;
+
   const sliced = data.slice(0, maxPoints);
+
+  const min = Math.min(...sliced);
+
+  const max = Math.max(...sliced);
 
   return sliced
     .map((value, index) => {
       const x = (index / Math.max(sliced.length - 1, 1)) * 1200;
-      const normalized = typeof value === "number" ? value : 0;
-      const y = 160 - (normalized - 512) * 0.35;
+
+      const normalized = (value - min) / Math.max(max - min, 0.0001);
+
+      const y = 280 - normalized * 240;
+
       return `${index === 0 ? "M" : "L"} ${x} ${y}`;
     })
     .join(" ");

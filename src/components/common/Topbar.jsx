@@ -9,7 +9,7 @@ export default function Topbar() {
             <Wifi className="h-4 w-4" />
             Connected
           </span>
-          <span className="text-slate-300">3 leads active</span>
+          <span className="text-slate-300">1 lead active</span>
           <span className="text-slate-300">72%</span>
         </div>
 

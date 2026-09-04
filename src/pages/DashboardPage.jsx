@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -15,10 +15,8 @@ import {
   Wifi,
 } from "lucide-react";
 import ECGChart from "../components/ecg/ECGChart";
-import { getLatestEcg } from "../services/ecgService";
-import { getAlerts } from "../services/alertService";
+import { getLatestEcg, analyzeECG } from "../services/ecgService";
 import { getEmergencyContacts } from "../services/emergencyContactService";
-import { getAISummary } from "../services/aiService";
 
 const resources = [
   { name: "Dhaka Medical College Hospital", distance: "1.8 km", eta: "~7 min" },
@@ -128,276 +126,337 @@ function getAlertStyles(severity) {
 }
 
 export default function DashboardPage() {
+  const latestEcgRef = useRef(null);
+  const aiRunningRef = useRef(false);
   const [ecgData, setEcgData] = useState(null);
   const [alerts, setAlerts] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [aiSummary, setAiSummary] = useState("Loading AI analysis...");
   const [loading, setLoading] = useState(true);
   const [lastSynced, setLastSynced] = useState(null);
+  const [aiResult, setAiResult] = useState(null);
+  const [riskResult, setRiskResult] = useState(null);
+  const [activeAlert, setActiveAlert] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
 
-    const fetchDashboardData = async () => {
+    const fetchECG = async () => {
       try {
-        const [ecgRes, alertsRes, contactsRes, aiRes] = await Promise.all([
-          getLatestEcg(),
-          getAlerts(),
-          getEmergencyContacts(),
-          getAISummary(),
-        ]);
+        console.log("Fetching ECG...");
 
-        if (!isMounted) return;
+        const ecgRes = await getLatestEcg();
 
-        setEcgData(ecgRes.data?.record || null);
-        setAlerts(alertsRes.data?.alerts || []);
-        setContacts(contactsRes.data?.contacts || []);
-        setAiSummary(
-          aiRes.data?.summary || "No AI summary available for the latest ECG.",
+        console.log("ECG RESPONSE:", ecgRes.data);
+
+        const latest = ecgRes.data?.record || null;
+
+        setEcgData(latest);
+
+        console.log(
+          "SETTING ECG DATA:",
+          latest.signal.length,
+          latest.signal.slice(0, 10),
         );
-        setLastSynced(new Date());
+
+        // IMPORTANT
+        latestEcgRef.current = latest;
       } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
-        if (isMounted) {
-          setAiSummary("Unable to load AI analysis right now.");
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        console.error("ECG streaming error:", error);
       }
     };
 
-    fetchDashboardData();
-    const interval = setInterval(fetchDashboardData, 2000);
+    fetchECG();
+
+    // ECG waveform refresh
+    const interval = setInterval(fetchECG, 2000);
 
     return () => {
       isMounted = false;
+
       clearInterval(interval);
     };
   }, []);
 
-  const activeAlert = useMemo(() => {
-    if (!ecgData) return null;
+  useEffect(() => {
+    let isMounted = true;
 
-    const matching = alerts
-      .filter((a) => !a.acknowledged && a.ecgRecordId === ecgData.id)
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const runAIAnalysis = async () => {
+      if (aiRunningRef.current) {
+        console.log("AI already running, skipping...");
 
-    return matching[0] || null;
-  }, [alerts, ecgData]);
+        return;
+      }
+
+      aiRunningRef.current = true;
+
+      console.log("========== AI TIMER FIRED ==========");
+
+      try {
+        const record = latestEcgRef.current;
+
+        console.log("ECG AVAILABLE FOR AI:", record);
+
+        if (!record?.signal || record.signal.length === 0) {
+          console.log("NO ECG SIGNAL");
+
+          return;
+        }
+
+        console.log("SENDING AI REQUEST TO BACKEND");
+
+        const aiRes = await analyzeECG({
+          ecg: record.signal,
+
+          sampling_rate: record.samplingRate || 250,
+        });
+
+        console.log("AI RESPONSE:", aiRes.data);
+
+        const result = aiRes.data.data;
+
+        setAiResult(result);
+
+        setRiskResult(result.layer2?.decision);
+
+        setAiSummary(result.layer3?.explanation || "No explanation available");
+      } catch (error) {
+        console.error("AI ERROR:", error);
+      } finally {
+        // IMPORTANT
+
+        aiRunningRef.current = false;
+      }
+    };
+
+    // optional: wait a little before first AI call
+    const firstTimeout = setTimeout(runAIAnalysis, 3000);
+
+    // AI every 10 seconds
+    const interval = setInterval(() => {
+      if (latestEcgRef.current) {
+        runAIAnalysis();
+      } else {
+        console.log("Waiting for ECG data...");
+      }
+    }, 10000);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(firstTimeout);
+      clearInterval(interval);
+    };
+  }, []);
 
   const statCards = useMemo(() => {
-    const heartRate = ecgData?.heartRate ?? 72;
-    const hrv = ecgData?.hrv ?? 42;
+    const layer1 = aiResult?.layer1 || {};
+    const layer2 = aiResult?.layer2 || {};
 
-    const aiHealthScore = activeAlert
-      ? activeAlert.severity === "CRITICAL"
-        ? 28
-        : activeAlert.severity === "HIGH"
-          ? 54
-          : activeAlert.severity === "MEDIUM"
-            ? 72
-            : 80
-      : 87;
+    const risk = layer2?.decision?.risk || "LOW";
 
-    const breathingRate =
-      typeof heartRate === "number"
-        ? Math.max(12, Math.min(20, Math.round(heartRate / 4.5)))
-        : 16;
+    // =========================
+    // Layer 1 values
+    // =========================
 
-    const rPeakInterval =
-      typeof heartRate === "number" && heartRate > 0
-        ? Math.round(60000 / heartRate)
-        : 834;
+    const heartRate = Math.round(layer1?.heartRate ?? 72);
+
+    const hrv = Math.round(layer1?.hrv?.sdnn ?? layer1?.hrv ?? 42);
+
+    const rPeakInterval = heartRate > 0 ? Math.round(60000 / heartRate) : 834;
+
+    // =========================
+    // AI Health Score
+    // =========================
+
+    const aiHealthScore =
+      risk === "CRITICAL"
+        ? 20
+        : risk === "HIGH"
+          ? 50
+          : risk === "MEDIUM"
+            ? 70
+            : 90;
+
+    const breathingRate = Math.round(heartRate / 4.5);
+
+    // =========================
+    // ST Segment
+    // =========================
+
+    let stSegment = "+0.2";
+
+    if (risk === "HIGH") stSegment = "+0.4";
+
+    if (risk === "CRITICAL") stSegment = "+0.8";
 
     return [
       {
         title: "Heart Rate",
+
         value: heartRate,
+
         suffix: "BPM",
-        accent:
-          activeAlert?.severity === "CRITICAL"
-            ? "Critical"
-            : activeAlert?.severity === "HIGH"
-              ? "Warning"
-              : "Stable",
+
+        accent: risk === "HIGH" || risk === "CRITICAL" ? "Warning" : "Stable",
+
         note: "from latest ECG",
+
         icon: Heart,
+
         color: "text-rose-400",
+
         border: "border-rose-500/20",
       },
+
       {
         title: "AI Health Score",
+
         value: aiHealthScore,
+
         suffix: "/100",
-        accent:
-          activeAlert?.severity === "CRITICAL"
-            ? "High risk"
-            : activeAlert?.severity === "HIGH"
-              ? "Needs review"
-              : "+3 from yesterday",
-        note: "Tap to expand",
+
+        accent: risk === "HIGH" ? "Needs review" : "+3 from yesterday",
+
+        note: "AI risk engine",
+
         icon: Shield,
-        color:
-          activeAlert?.severity === "CRITICAL"
-            ? "text-rose-400"
-            : activeAlert?.severity === "HIGH"
-              ? "text-amber-400"
-              : "text-emerald-400",
+
+        color: risk === "HIGH" ? "text-amber-400" : "text-emerald-400",
+
         border:
-          activeAlert?.severity === "CRITICAL"
-            ? "border-rose-500/20"
-            : activeAlert?.severity === "HIGH"
-              ? "border-amber-500/20"
-              : "border-emerald-500/20",
+          risk === "HIGH" ? "border-amber-500/20" : "border-emerald-500/20",
       },
+
       {
         title: "HRV",
+
         value: hrv,
+
         suffix: "ms",
-        accent:
-          typeof hrv === "number" && hrv < 20
-            ? "Low variability"
-            : "Good variability",
-        note: "Improving trend",
+
+        accent: hrv < 20 ? "Low variability" : "Good variability",
+
+        note: "Layer 1 HRV analysis",
+
         icon: Activity,
+
         color: "text-emerald-400",
+
         border: "border-emerald-500/20",
       },
+
       {
         title: "Breathing Rate",
+
         value: breathingRate,
+
         suffix: "BPM",
+
         accent: "Normal",
-        note: "Calm & steady",
+
+        note: "Estimated from ECG",
+
         icon: Wifi,
+
         color: "text-blue-400",
+
         border: "border-blue-500/20",
       },
+
       {
         title: "T Wave Status",
-        value: "Normal",
+
+        value: layer1?.morphology?.tWave || "Normal",
+
         suffix: "",
-        accent: "No inversion",
-        note: "All leads upright",
+
+        accent: "AI morphology",
+
+        note: "ECG waveform analysis",
+
         icon: TrendingUp,
+
         color: "text-emerald-400",
+
         border: "border-emerald-500/20",
       },
+
       {
         title: "Strain Level",
-        value: activeAlert?.severity === "CRITICAL" ? "High" : "Low",
+
+        value: risk === "HIGH" || risk === "CRITICAL" ? "High" : "Low",
+
         suffix: "",
-        accent:
-          activeAlert?.severity === "CRITICAL"
-            ? "Elevated load"
-            : "Minimal exertion",
-        note:
-          activeAlert?.severity === "CRITICAL"
-            ? "Needs attention"
-            : "Below 30% max",
+
+        accent: risk === "HIGH" ? "Elevated load" : "Minimal exertion",
+
+        note: "AI cardiovascular stress",
+
         icon: Sparkles,
-        color:
-          activeAlert?.severity === "CRITICAL"
-            ? "text-amber-400"
-            : "text-emerald-400",
+
+        color: risk === "HIGH" ? "text-amber-400" : "text-emerald-400",
+
         border:
-          activeAlert?.severity === "CRITICAL"
-            ? "border-amber-500/20"
-            : "border-emerald-500/20",
+          risk === "HIGH" ? "border-amber-500/20" : "border-emerald-500/20",
       },
+
       {
         title: "Stress Index",
-        value:
-          activeAlert?.severity === "CRITICAL"
-            ? 81
-            : activeAlert?.severity === "HIGH"
-              ? 56
-              : 24,
+
+        value: risk === "CRITICAL" ? 81 : risk === "HIGH" ? 56 : 24,
+
         suffix: "/100",
-        accent:
-          activeAlert?.severity === "CRITICAL"
-            ? "High stress"
-            : activeAlert?.severity === "HIGH"
-              ? "Moderate stress"
-              : "Low stress",
-        note:
-          activeAlert?.severity === "CRITICAL"
-            ? "Reduced recovery"
-            : activeAlert?.severity === "HIGH"
-              ? "Watch closely"
-              : "Well recovered",
+
+        accent: risk === "HIGH" ? "High stress" : "Low stress",
+
+        note: "AI risk estimation",
+
         icon: AlertTriangle,
-        color:
-          activeAlert?.severity === "CRITICAL"
-            ? "text-rose-400"
-            : activeAlert?.severity === "HIGH"
-              ? "text-amber-400"
-              : "text-emerald-400",
+
+        color: risk === "HIGH" ? "text-rose-400" : "text-emerald-400",
+
         border:
-          activeAlert?.severity === "CRITICAL"
-            ? "border-rose-500/20"
-            : activeAlert?.severity === "HIGH"
-              ? "border-amber-500/20"
-              : "border-emerald-500/20",
+          risk === "HIGH" ? "border-rose-500/20" : "border-emerald-500/20",
       },
+
       {
         title: "ST Segment",
-        value:
-          activeAlert?.severity === "CRITICAL"
-            ? "+0.8"
-            : activeAlert?.severity === "HIGH"
-              ? "+0.4"
-              : "+0.2",
+
+        value: stSegment,
+
         suffix: "mV",
-        accent:
-          activeAlert?.severity === "CRITICAL"
-            ? "Abnormal range"
-            : activeAlert?.severity === "HIGH"
-              ? "Borderline"
-              : "Normal range",
-        note:
-          activeAlert?.severity === "CRITICAL"
-            ? "Immediate review"
-            : activeAlert?.severity === "HIGH"
-              ? "Slight deviation"
-              : "No deviation",
+
+        accent: risk === "HIGH" ? "Borderline" : "Normal range",
+
+        note: "No deviation",
+
         icon: TrendingUp,
-        color:
-          activeAlert?.severity === "CRITICAL"
-            ? "text-rose-400"
-            : activeAlert?.severity === "HIGH"
-              ? "text-amber-400"
-              : "text-emerald-400",
+
+        color: risk === "HIGH" ? "text-amber-400" : "text-emerald-400",
+
         border:
-          activeAlert?.severity === "CRITICAL"
-            ? "border-rose-500/20"
-            : activeAlert?.severity === "HIGH"
-              ? "border-amber-500/20"
-              : "border-emerald-500/20",
+          risk === "HIGH" ? "border-amber-500/20" : "border-emerald-500/20",
       },
+
       {
         title: "R-Peak Interval",
+
         value: rPeakInterval,
+
         suffix: "ms",
-        accent: activeAlert?.severity === "CRITICAL" ? "Irregular" : "Regular",
-        note:
-          activeAlert?.severity === "CRITICAL"
-            ? "Variable timing"
-            : "Consistent timing",
+
+        accent: risk === "HIGH" ? "Irregular" : "Regular",
+
+        note: "Calculated from HR",
+
         icon: Clock3,
-        color:
-          activeAlert?.severity === "CRITICAL"
-            ? "text-amber-400"
-            : "text-blue-400",
-        border:
-          activeAlert?.severity === "CRITICAL"
-            ? "border-amber-500/20"
-            : "border-blue-500/20",
+
+        color: "text-blue-400",
+
+        border: "border-blue-500/20",
       },
     ];
-  }, [ecgData, activeAlert]);
+  }, [aiResult]);
 
   return (
     <div className="w-full min-w-0 space-y-6 pb-10">
@@ -509,12 +568,14 @@ export default function DashboardPage() {
         </div>
 
         <div className="p-4">
-          <ECGChart data={ecgData} />
+          <ECGChart data={ecgData?.signal || []} />
 
           <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
-            <MiniLead label="Lead I" color="#f43f5e" data={ecgData?.lead1} />
-            <MiniLead label="Lead II" color="#f59e0b" data={ecgData?.lead2} />
-            <MiniLead label="Lead III" color="#10b981" data={ecgData?.lead3} />
+            <MiniLead label="Lead I" color="#f43f5e" data={ecgData?.signal} />
+
+            <MiniLead label="Lead II" color="#f59e0b" data={ecgData?.signal} />
+
+            <MiniLead label="Lead III" color="#10b981" data={ecgData?.signal} />
           </div>
         </div>
       </Card>

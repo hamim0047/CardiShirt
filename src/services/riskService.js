@@ -6,16 +6,11 @@ const API = axios.create({
 
 API.interceptors.request.use((req) => {
   const token = localStorage.getItem("cardishirt_token");
-
   if (token) {
     req.headers.Authorization = `Bearer ${token}`;
   }
-
   return req;
 });
 
-export const getLatestEcg = () => API.get("/ecg/latest");
-
-export const getEcgHistory = () => API.get("/ecg/history");
-
-export const analyzeECG = (data) => API.post("/ecg/analyze", data);
+export const getRiskSummary = (rangeCode) =>
+  API.get(`/risk/summary?range=${rangeCode}`);
