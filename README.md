@@ -13,6 +13,7 @@
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
 ![ESP32](https://img.shields.io/badge/ESP32-E7352C?style=for-the-badge&logo=espressif&logoColor=white)
+![Status](https://img.shields.io/badge/status-active%20development-yellow?style=for-the-badge)
 
 </div>
 
@@ -70,6 +71,18 @@ flowchart TD
     Models --> MI["MI Model<br/>PTBDB"]
 
     DB --> FE[Frontend Dashboard]
+
+    classDef hardware fill:#e7352c,stroke:#a6231a,color:#fff
+    classDef server fill:#339933,stroke:#1f6b1f,color:#fff
+    classDef ai fill:#ee4c2c,stroke:#a8331d,color:#fff
+    classDef data fill:#4169e1,stroke:#2a4aa8,color:#fff
+    classDef ui fill:#61dafb,stroke:#2596be,color:#000
+
+    class ESP32,Sensor hardware
+    class Backend,Notif server
+    class AIS,Models,Arr,MI ai
+    class DB data
+    class FE ui
 ```
 
 ---
@@ -178,6 +191,14 @@ flowchart TD
     MI --> DE
 
     DE --> L3["Layer 3<br/>Explainable AI"]
+
+    classDef stage fill:#4169e1,stroke:#2a4aa8,color:#fff
+    classDef model fill:#ee4c2c,stroke:#a8331d,color:#fff
+    classDef decide fill:#f6b026,stroke:#a87218,color:#000
+
+    class Signal,L1,L3 stage
+    class L2,Arr,MI model
+    class DE decide
 ```
 
 ---
@@ -233,7 +254,10 @@ The wearable device collects:
 - Motion information
 - Fall detection information
 
-**Communication:** ESP32 → Backend, via a REST API over HTTP *(see the [correction note](#repository-structure) below — this was previously documented as WebSocket)*.
+**Communication:** ESP32 → Backend, via a REST API over HTTP.
+
+> [!WARNING]
+> This was previously documented as WebSocket — checked against the actual backend code (`package.json` has no `ws`/`socket.io` dependency, and `/api/ecg/ingest` is a plain Express `POST` route), so this has been corrected to REST/HTTP.
 
 ---
 
@@ -270,13 +294,11 @@ flowchart TD
 
 Possible outputs:
 
-| Level | |
-|---|---|
-| 🟢 `LOW` | |
-| 🟡 `MODERATE` | |
-| 🟠 `HIGH` | |
-| 🔴 `CRITICAL` | |
-| ⚪ `UNRELIABLE` | |
+![LOW](https://img.shields.io/badge/risk-LOW-brightgreen?style=for-the-badge)
+![MODERATE](https://img.shields.io/badge/risk-MODERATE-yellow?style=for-the-badge)
+![HIGH](https://img.shields.io/badge/risk-HIGH-orange?style=for-the-badge)
+![CRITICAL](https://img.shields.io/badge/risk-CRITICAL-red?style=for-the-badge)
+![UNRELIABLE](https://img.shields.io/badge/risk-UNRELIABLE-lightgrey?style=for-the-badge)
 
 ### Emergency Support
 
@@ -290,7 +312,11 @@ The system can:
 
 ## Repository Structure
 
+> [!WARNING]
 > **Correction from the original doc:** the frontend isn't in its own `frontend/` folder — its source (`components/`, `pages/`, `services/`, `routes/`, `store/`, etc.) lives directly under `src/` at the repository root, alongside `vite.config.js`, `index.html`, and `package.json`. The tree below reflects the real, current layout. This also affects the [Installation](#installation) commands further down.
+
+<details>
+<summary>📁 Click to expand full repository tree</summary>
 
 ```
 CardiShirt/
@@ -325,6 +351,8 @@ CardiShirt/
 │
 └── README.md
 ```
+
+</details>
 
 ---
 
@@ -396,6 +424,7 @@ http://localhost:8000
 
 ## Environment Variables
 
+> [!TIP]
 > **Expanded from the original doc** to match what the backend actually requires today — the AI-explanation and family-notification features need a few keys that weren't previously listed.
 
 **Backend** (`backend/.env`):
@@ -490,3 +519,11 @@ CardiShirt aims to build an affordable AI-powered wearable ECG monitoring platfo
 </td>
 </tr>
 </table>
+
+<div align="center">
+
+---
+
+🫀 **Made for early cardiac risk screening, one heartbeat at a time.**
+
+</div>
